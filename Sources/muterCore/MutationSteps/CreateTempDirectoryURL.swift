@@ -17,8 +17,22 @@ struct CreateMutatedProjectDirectoryURL: MutationStep {
         with projectDirectoryURL: URL
     ) -> String {
         let lastComponent = projectDirectoryURL.lastPathComponent
+        let mutatedName = lastComponent + "_mutated"
+
+        if let override = ProcessInfo.processInfo.environment["MUTER_MUTATED_ROOT"],
+           !override.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let expanded = NSString(string: override).expandingTildeInPath
+            let rootURL = URL(fileURLWithPath: expanded, isDirectory: true)
+            do {
+                try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+                return rootURL.appendingPathComponent(mutatedName).path
+            } catch {
+                // Fall back to default location below
+            }
+        }
+
         let modifiedDirectory = projectDirectoryURL.deletingLastPathComponent()
-        let destination = modifiedDirectory.appendingPathComponent(lastComponent + "_mutated")
+        let destination = modifiedDirectory.appendingPathComponent(mutatedName)
         return destination.path
     }
 }
